@@ -27,12 +27,12 @@ layfile = "Chico_ori" # Layout file, under maps directory
 ######################## Single Run ###########################
 
 # Loads maps
-p_grid,z_grid,f_grid,A_grid,k_grid,numsec,gridsize,minx,miny=Load_RSF(string("maps\\",rsf,".rsf")) ;
-layout=Load_Layout(string("maps\\",layfile,".txt"),minx,miny)
+p_grid,z_grid,f_grid,A_grid,k_grid,numsec,gridsize,minx,miny=Load_RSF(string("maps/",rsf,".rsf")) ;
+layout=Load_Layout(string("maps/",layfile,".txt"),minx,miny)
 
 # Loads Linear Interpolation of the power curve (here for standard density)
-pcurve  = open(readdlm,"others\\power_curve.txt")[:,2]
-ctcurve = open(readdlm,"others\\CT1.txt")[:,2]
+pcurve  = open(readdlm,"others/power_curve.txt")[:,2]
+ctcurve = open(readdlm,"others/CT1.txt")[:,2]
 
 # Layout optimization
 @time layout = Opt_PSO(43,rsf,true)
