@@ -21,7 +21,7 @@
             if i!=j
                 dis = norm(layout[i,:]-layout[j,:])
                 if dis < 2.0*(110.0)
-                    nr = nr + (1.0/dis)
+                    nr = nr + (220-dis) #(1.0/dis)
                 end
             end
         end
@@ -187,7 +187,7 @@ end # Layout_Array
 function Opt_PSO(numturb,rsf,toplot)
 
 # Loads chosen RSF
-  p_grid,z_grid,f_grid,A_grid,k_grid,numsec,gridsize,minx,miny = Load_RSF(string("maps\\",rsf,".rsf"));
+  p_grid,z_grid,f_grid,A_grid,k_grid,numsec,gridsize,minx,miny = Load_RSF(string("maps/",rsf,".rsf"));
 
 # Inclui os dados das regioes para limitar espaço de busca de cada turbina
 # regioes, centroides e reg_turbinas
