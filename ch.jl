@@ -3,6 +3,7 @@
 # Minha implementação do Jarvis March para determinar o Convex Hull
 # Obviamnte, está bizonha e pode ser melhorada...mas  eu entendo :0)
 #
+# Testando se funciona ... diferença somente nesta linha...
 @everywhere function CH_Lenz(points)
 
 
