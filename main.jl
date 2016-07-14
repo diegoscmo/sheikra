@@ -14,7 +14,7 @@ using PyPlot
 using Distributions
 
 include("io.jl")
-include("fobj.jl)
+include("fobj.jl")
 include("park.jl")
 include("pso.jl")
 include("ch.jl")
