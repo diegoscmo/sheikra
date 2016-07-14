@@ -38,7 +38,9 @@ pcurve  = open(readdlm,"others/power_curve.txt")[:,2]
 ctcurve = open(readdlm,"others/CT1.txt")[:,2]
 
 # Layout optimization
-@time layout = Opt_PSO(43,rsf,true)
+# layout = Opt_PSO(43,rsf,true)
+# layout = Crazy_Joe(43,1000,rsf,true)
+  layout = Powell(43,1E-5,rsf,true)
 
 # Single park calculation
 AEP = Calc_Park(layout,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve);
