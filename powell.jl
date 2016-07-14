@@ -133,7 +133,8 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
     d = vec(d/norm(d))
 
   # Verifica se não temos um alfa limite. Do contrário, utilizamos o máximo
-    const alfa = 1.0
+  # FIXME -> adaptar ao tamanho do grid
+    const alfa = 10.0
 
   # Copia para a saida
     const xf = copy(x)
