@@ -5,18 +5,21 @@
 
 #  cd(ENV["SHEIKRA_DIR"])  #Working directory for library and files
 
-if nprocs()==1
-   addprocs(15)
-end
+#if nprocs()==1
+#   addprocs(15)
+#end
 
 # Initializes libraries
 using PyPlot
 using Distributions
 
 include("io.jl")
+include("fobj.jl)
 include("park.jl")
 include("pso.jl")
 include("ch.jl")
+include("powell.jl")
+include("crazy_joe.jl")
 
 ########################## Inputs #############################
 
