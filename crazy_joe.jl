@@ -31,7 +31,7 @@ function Crazy_Joe(numturb,numero_chutes,rsf,toplot)
         # Se não tiver violação, então vamos ser felizes
         # if restr==0.0
            if obj<melhor_valor[1]
-              println("\n Improving... ",obj)
+              println("\n Crazy_Joe::Improving... ",obj)
               melhor_valor[1] = obj
               melhor_posicao[:,1] = xp
            end
