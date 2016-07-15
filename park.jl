@@ -8,54 +8,54 @@
 
   ### Future turbine inputs ####
   # assuming here same turbine for all layout
-  rot_rad = 55.0                   # Rotor radius
-  hub_hei = 120.0                  # Hub Height
-  wake_dk = 0.11                   # Wake decay (wake spread angle)
-                                   # Air density alrays the same
+  const rot_rad = 55.0                   # Rotor radius
+  const hub_hei = 120.0                  # Hub Height
+  const wake_dk = 0.11                   # Wake decay (wake spread angle)
+                                         # Air density alrays the same
 
   ### Future calculation inputs ####
-  vini    = 0.5                    # Initial velocity #0.5
-  vstep   = 1.0                    # Step for loop through velocities #1.0
-  vfin    = 20.5                   # Final velocity #30.5 ##MODIFICADO
-  nangles = 31                      # Number of angles/sector (for wake) #31, can't be 1  ##MODIFICADO
+  const vini    = 0.5                    # Initial velocity #0.5
+  const vstep   = 1.0                    # Step for loop through velocities #1.0
+  const vfin    = 20.5                   # Final velocity #30.5 ##MODIFICADO
+  const nangles = 31                     # Number of angles/sector (for wake) #31, can't be 1  ##MODIFICADO
 
 
   # Velocities
-  vels    = collect(vini:vstep:vfin)  # Velocities to be calculated
-  numvel  = size(vels,1)
+  const vels    = collect(vini:vstep:vfin)  # Velocities to be calculated
+  const numvel  = size(vels,1)
 
   # Inicializes AEP
-  numturb = size(layout,1)
-  AEP     = zeros(Float64,numturb+1,5)
+  const numturb = size(layout,1)
+  const AEP     = zeros(Float64,numturb+1,5)
 
   # Calculates wake for the current layout
-  wakemtx = Jensen_Wake(layout,numturb,A_grid,z_grid,gridsize,numsec,nangles,vels,rot_rad,hub_hei,wake_dk,ctcurve)
+  const wakemtx = Jensen_Wake(layout,numturb,A_grid,z_grid,gridsize,numsec,nangles,vels,rot_rad,hub_hei,wake_dk,ctcurve)
 
   # Loops through each turbine and sector
-  for t=1:numturb
-    for sec=1:numsec
+  @inbounds for t=1:numturb
+    @inbounds for sec=1:numsec
 
       # Acquires data from the grid
-      f_dir = Get_Grid(layout[t,:],f_grid[:,:,sec],gridsize)
-      A_dir = Get_Grid(layout[t,:],A_grid[:,:,sec],gridsize)
-      k_dir = Get_Grid(layout[t,:],k_grid[:,:,sec],gridsize)
+      const f_dir = Get_Grid(layout[t,:],f_grid[:,:,sec],gridsize)
+      const A_dir = Get_Grid(layout[t,:],A_grid[:,:,sec],gridsize)
+      const k_dir = Get_Grid(layout[t,:],k_grid[:,:,sec],gridsize)
 
       # Calculates Weibull distribution
-      dist_vel = Gen_Weibull(A_dir,k_dir,vini,vstep,vfin)
+      const dist_vel = Gen_Weibull(A_dir,k_dir,vini,vstep,vfin)
 
-      for v=1:numvel
+      @inbounds for v=1:numvel
         # Computes the frequency of wind for each velocity
-        veloc = dist_vel[v,1]
-        f_vel = dist_vel[v,2]
-        freq  = f_dir*f_vel*365.0*24.0/1E3
+        const veloc = dist_vel[v,1]
+        const f_vel = dist_vel[v,2]
+        const freq  = f_dir*f_vel*365.0*24.0/1E3
 
         # Acumulates AEP without wake
         AEP[t,3] += freq*Interpola1D(pcurve,veloc)
 
         # For wake calculation:
-        for ang = 1:nangles
+        @inbounds for ang = 1:nangles
           # Computes wake_velocity for each angle
-          wake_vel = veloc*(1.0 - wakemtx[t,v,sec,ang])
+          const wake_vel = veloc*(1.0 - wakemtx[t,v,sec,ang])
 
           # Acumulates AEP with wake (divided by number of angles)
           AEP[t,4] += freq*Interpola1D(pcurve,wake_vel)/nangles
@@ -82,62 +82,62 @@ end # function Calc_Park
 @everywhere function Jensen_Wake(layout,numturb,A_grid,z_grid,gridsize,numsec,nangles,vels,rot_rad,hub_hei,wake_dk,ctcurve)
 
   # Rotor area calculation
-  rot_area = pi*rot_rad^2
+  const rot_area = pi*rot_rad^2
 
   # Loads Linearly Interpolated CT curve (here for standard density)
   #CT = Load_Curve("others\\CT1.txt")
 
   # Includes turbine position to the layout
-  ord_layout = [layout 1:1:numturb]
+  const ord_layout = [layout 1:1:numturb]
 
   # Initializes wake matrix
-  numvel   = size(vels,1)
-  wakemtx  = zeros(Float64,numturb,numvel,numsec,nangles)
+  const numvel   = size(vels,1)
+  const wakemtx  = zeros(Float64,numturb,numvel,numsec,nangles)
 
   # Loads height of each WT
-  z = zeros(Float64,numturb)
-  for i=1:numturb
+  const z = Array(Float64,numturb)
+  @inbounds for i=1:numturb
     z[i] = Get_Grid(ord_layout[i,1:2],z_grid,gridsize)
   end
 
   # Step angles
-  angstep = 360/(numsec*(nangles-1))
+  const angstep = 360/(numsec*(nangles-1))
 
   # Iteration through sectors and angles (eg 1 (north), -15° to +15°)
-  for sec=1:numsec
-    for ang=1:nangles
+  @inbounds for sec=1:numsec
+    @inbounds for ang=1:nangles
 
       # Calculates angle tetha for each angle to be checked on the sector (north = -15 to +15)
-      theta = ( ((sec-1)*360/numsec) - 360.0/numsec/2.0 + (ang-1)*angstep )*pi/180.0
+      const theta = ( ((sec-1)*360/numsec) - 360.0/numsec/2.0 + (ang-1)*angstep )*pi/180.0
 
       # Includes turbine position to the layout
-      ord_layout = [layout 1:1:numturb]
+      const ord_layout = [layout 1:1:numturb]
       # Organizes the turbines according to the wind direction, upwinds first
       ord_layout = Order_Layout(ord_layout,numturb,theta)
 
       # Loop through each ith turbine
-      for i = 1:numturb
+      @inbounds for i = 1:numturb
 
         # Only jth turbines downind of ith will be looped through
-        for j = (i+1):numturb
+        @inbounds for j = (i+1):numturb
           # Checks the downwind distance from ith to the jth turbine
-          vector = ord_layout[i,1:2] - ord_layout[j,1:2]
-          ydist  = abs(vector[1]*sin(theta) + vector[2]*cos(theta))
+          const vector = ord_layout[i,1:2] - ord_layout[j,1:2]
+          const ydist  = abs(vector[1]*sin(theta) + vector[2]*cos(theta))
 
           # Checks distance in x
-          xdist = abs(vector[1]*cos(theta) + vector[2]*sin(theta))
+          const xdist = abs(vector[1]*cos(theta) + vector[2]*sin(theta))
 
           # Identifies the turbine numbers for localization
-          tposi = convert(Int64,ord_layout[i,3])
-          tposj = convert(Int64,ord_layout[j,3])
+          const tposi = convert(Int64,ord_layout[i,3])
+          const tposj = convert(Int64,ord_layout[j,3])
 
           # Computes new xdist with x and z pitagoras
-          xdist = sqrt( xdist^2 + abs(z[tposi] - z[tposj])^2 )
+          const xdist = sqrt( xdist^2 + abs(z[tposi] - z[tposj])^2 )
 
           # Computes the Wake circle radius
-          r_wake = rot_rad + wake_dk*ydist
+          const r_wake = rot_rad + wake_dk*ydist
           # Inicializes wake multiplier
-          wake_mult = 0.0
+          const wake_mult = 0.0
           # If the turbine is 100% inside the wake, normal wake_mult calculation
           if xdist <= r_wake - rot_rad
             wake_mult = 1.0 / (1.0 + wake_dk*ydist/(rot_rad) )^2
@@ -161,10 +161,10 @@ end # function Calc_Park
 
           # If a wake multiplier was sucessfully computed
           if wake_mult > 0.0
-            for v=1:numvel
+            @inbounds for v=1:numvel
               # Velocity of the upwind turbine considering upwind wake
               vup = vels[v]  * (1.0 - sqrt(wakemtx[tposi,v,sec,ang]) )
-#
+              #
               # Velocity deficit relating to the upwind turbine speed
               vel_def = (1.0 - sqrt(1.0 - Interpola1D(ctcurve,vup))*(vup/vels[v]) ) * wake_mult
 
@@ -215,6 +215,7 @@ end #function
   # And the list gets sorted by distance, and the distances column is excluded
   ord_layout = sortrows(ord_layout, lt=(x,y)->isless(x[4],y[4]))[:,1:3]
 
+  # Ele é passado por referência para esta rotina, portanto não precisamos dar um return
   return ord_layout
 end #function Order_Layout
 
@@ -223,16 +224,16 @@ end #function Order_Layout
 @everywhere function Gen_Weibull(A,k,vini,vstep,vfin)
 
   # Number of velocities
-  si=size(collect(vini:vstep:vfin),1)
+  const si=size(collect(vini:vstep:vfin),1)
 
   # Initializes distribution array
-  W = zeros(convert(Int64,(vfin-vini))+1,2)
+  const W = Array(Float64,convert(Int64,(vfin-vini))+1,2)
 
   # Loops through speeds
-  cont = 1
-  for x = vini:vstep:vfin
+  const cont = 1
+  @inbounds for x = vini:vstep:vfin
 
-    f =  ( (k/A) * ((x/A)^(k-1)) * e^-(x/A)^k )*vstep
+    const f =  ( (k/A) * ((x/A)^(k-1)) * e^-(x/A)^k )*vstep
     W[cont,:] = [x   f]
 
     # In case of NaN (i.e.: A = 0 inputs), W = 0
