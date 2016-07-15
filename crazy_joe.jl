@@ -39,16 +39,16 @@ function Crazy_Joe(numturb,numero_chutes,rsf,toplot)
 
   end #p
 
-  println(melhor_posicao')
+  #println(melhor_posicao')
 
   # Escreve a melhor solução
-  writedlm("melhor_crazy_joe.dat",sdata(melhor_posicao))
+  #writedlm("melhor_crazy_joe.dat",sdata(melhor_posicao))
 
 
-  if toplot
-      Atualiza_Display(melhor_posicao',numturb,melhor_valor[1],1,1,p_grid,gridsize)
-  end
+  #if toplot
+  #    Atualiza_Display(melhor_posicao',numturb,melhor_valor[1],1,1,p_grid,gridsize)
+  #end
 
-
+  return vec(melhor_posicao')
 
 end
