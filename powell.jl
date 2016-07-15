@@ -2,7 +2,7 @@
 # Método de Powell
 # http://www.personal.psu.edu/cxg286/Math555.pdf, página 99/100
 #
-function Powell(numturb,tol,rsf,toplot)
+function Powell(numturb,nc,tol,rsf,toplot)
 
   # Loads chosen RSF
   p_grid,z_grid,f_grid,A_grid,k_grid,numsec,gridsize,minx,miny = Load_RSF(string("maps/",rsf,".rsf"));
@@ -15,8 +15,11 @@ function Powell(numturb,tol,rsf,toplot)
   pcurve  = open(readdlm,"others/power_curve.txt")[:,2]
   ctcurve = open(readdlm,"others/CT1.txt")[:,2]
 
-  # Gera um ponto inicial para o método
-  x_now = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
+  # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
+  # uso do Inicializa_Particulas.
+  x_now = Crazy_Joe(numturb,nc,rsf,toplot)
+  
+  # x_now = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
 
   #println("\n Saindo do ponto ", x_now')
 
