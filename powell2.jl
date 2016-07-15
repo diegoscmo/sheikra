@@ -48,7 +48,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
   fret,violret = Fun_Obj(p',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
   if toplot
-     Atualiza_Display(p',numturb,fN,0,num2^2,p_grid,gridsize)
+     Atualiza_Display(p',numturb,fret,0,num2^2,p_grid,gridsize)
   end
 
   println(" Partindo da função objetivo ",fret)
@@ -98,7 +98,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
    if 2.0*(fp-fret) <= ftol*(abs(fp)+abs(fret))+1E-10
       println(" Powell:: Tolerância atingida ",2.0*(fp-fret))
       close(arquivo)
-      return Array_Layout(p)
+      return Array_Layout(p')
    end
 
 
@@ -138,7 +138,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
   flush(arquivo)
 
   if toplot
-     Atualiza_Display(p',numturb,fN,iter,num2^2,p_grid,gridsize)
+     Atualiza_Display(p',numturb,fret,iter,num2^2,p_grid,gridsize)
   end
 
 
@@ -146,7 +146,7 @@ end #iter
 
 # Fecha o arquivo e retorna a solução
 close(arquivo)
-return Array_Layout(p)
+return Array_Layout(p')
 
 end # Rotina..que só deve sair por tolerância ou por excesso de iterações
 
