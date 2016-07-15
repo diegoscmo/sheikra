@@ -73,6 +73,11 @@ function Powell(numturb,nc,tol,rsf,toplot)
            flag, x_next,fN = Line_Search_Backtracing(x_now, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
         end
 
+        # Teste de consistência
+        if flag==-1
+            println("\n Powell::direção $i não mehorou em nenhum sentido do LS")
+        end
+
         # Vetor de diferença e sua norma
         @simd for j=1:2*numturb
            @inbounds r[j] = x_next[j] - x_now[j]
