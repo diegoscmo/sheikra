@@ -19,7 +19,7 @@ include("fobj.jl")
 include("park.jl")
 include("pso.jl")
 include("ch.jl")
-include("powell.jl")
+include("powell2.jl")
 include("crazy_joe.jl")
 
 ########################## Inputs #############################
