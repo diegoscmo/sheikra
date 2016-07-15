@@ -22,8 +22,13 @@ include("ch.jl")
 include("powell2.jl")
 include("crazy_joe.jl")
 
-########################## Inputs #############################
+########## FATOR DE PENALIZACAO #########
+# Comentário no cálculo da fobj
+#########################################
+@everywhere  PENAL = 100.0
+#########################################
 
+########################## Inputs #############################
 # RSF and Layout files input
 rsf  = "Chicoloma"       # ReStource File, under maps directory
 layfile = "Chico_ori" # Layout file, under maps directory
