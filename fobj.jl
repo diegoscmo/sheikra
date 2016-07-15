@@ -146,7 +146,7 @@ end
   numturb = convert(Int64,size(array,2)/2)
 
   # Inicializa o vetor Layout
-  layout = zeros(numturb,2)
+  layout = Array(numturb,2)
 
   # Converte array para layout x,y
   for i=1:numturb
@@ -167,7 +167,7 @@ end # Array_Layout
   numturb = size(layout,1)
 
   # Inicializa o vetor Layout
-  array = zeros(numturb*2)
+  array = Array(numturb*2)
 
   # Converte layout x,y para array 1D
   for i=1:numturb
