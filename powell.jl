@@ -31,6 +31,10 @@ function Powell(numturb,nc,tol,rsf,toplot)
   # Gera a base inicial de busca
   const L = eye(2*numturb,2*numturb)
 
+  # Vamos abrir um arquivo para escrita, pois o método é lento
+  # e vale a pena acompanhar o andamento
+  arquivo = open("convergencia_powell.txt","w")
+
   # Loop principal
   while xdiff>tol && count < Nmaxiter
 
