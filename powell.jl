@@ -17,12 +17,8 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
   # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
   # uso do Inicializa_Particulas.
-  x_now = Crazy_Joe(numturb,nc,rsf,toplot)
-  
-  # x_now = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
-
-  #println("\n Saindo do ponto ", x_now')
-
+  const x_now = Crazy_Joe(numturb,nc,rsf,toplot)
+    
   # Agora vamos lá
   const xdiff = 1.0
   const count = 0
@@ -32,11 +28,10 @@ function Powell(numturb,nc,tol,rsf,toplot)
   const Nmaxiter= (2*numturb)^2
 
   # Gera a base inicial de busca
-  const L = speye(2*numturb,2*numturb)
+  const L = eye(2*numturb,2*numturb)
 
   # Loop principal
   while xdiff>tol && count < Nmaxiter
-
 
     # Incrementa o contador
     count +=1
@@ -44,18 +39,22 @@ function Powell(numturb,nc,tol,rsf,toplot)
     # Variáveis internas do while
     const Df = 0.0
     const x0 = copy(x_now)
+    const r = Array(2*numturb)
+    const P = Array(2*numturb)
 
     # Preciso deste cara depois do loop de direções
     const x_next = zeros(x_now)
     const fN = 0.0
-
+    
     println("\n Avaliando as direções para esta iteração")
 
     # Loop das direções
-    for i=1:2*numturb
+    @inbounds for i=1:2*numturb
 
         # Vetor direção atual
-        P = full(L[:,i])
+        @inbounds for j=1:2*numturb
+            P[j] = L[j,i]
+        end
 
         # Line search para frente (sentido = 1)
         flag, x_next = Line_Search_Backtracing(x_now, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
@@ -66,7 +65,9 @@ function Powell(numturb,nc,tol,rsf,toplot)
         end
 
         # Vetor de diferença e sua norma
-        const r = x_next - x_now
+        @simd for j=1:2*numturb
+           @inbounds r[j] = x_next[j] - x_now[j]
+        end
         const Nr = norm(r)
 
         #println("\n residuo $Nr na dir $i")
@@ -78,23 +79,27 @@ function Powell(numturb,nc,tol,rsf,toplot)
         end
 
         # Rola o ponto atual
-        x_now = copy(x_next)
+        @inbounds for j=1:2*numturb
+           x_now[j] = x_next[j]
+        end
 
     end #i
 
     # Ao terminarmos de varrer todas as direções, temos que nos preocupar com a base
     # pois os vetores podem ficar L.I
     # Vamos usar a Heurística do Powell...
-
-    P = x_next - x0
+    @simd for j=1:2*numturb
+       @inbounds P[j] = x_next[j] - x0[j]
+    end
     f0,viol0 = Fun_Obj(x0',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
     fN,violN = Fun_Obj(x_next',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
     fE,violE = Fun_Obj((2*x_next-x0)',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
-    if !(fE<=f0) || (2*(2*fN+fE-f0)*((fN-f0)-Df)^2 >= Df*(fE-f0)^2)
-
-         # Arruma a base para não perder a IL.
-         L[:,best_index] = P
+    if !(fE<=f0) || (2*(2*fN+fE-f0)*((fN-f0)-Df)^2 >= Df*(fE-f0)^2)@simd 
+         # Arruma a base para não perder a IL. 
+         @inbounds for j=1:2*numturb
+             L[j,best_index] = P[j]
+          end
     end
 
     println("\n Obj ",fN," ",count)
