@@ -215,7 +215,7 @@ end #function
   # And the list gets sorted by distance, and the distances column is excluded
   ord_layout = sortrows(ord_layout, lt=(x,y)->isless(x[4],y[4]))[:,1:3]
 
-  # Ele é passado por referência para esta rotina, portanto não precisamos dar um return
+  
   return ord_layout
 end #function Order_Layout
 
