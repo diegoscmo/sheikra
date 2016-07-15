@@ -52,7 +52,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
   end
 
   println(" Partindo da função objetivo ",fret)
-  println(arquivo,count," ",fret," ",0," ",0.0," Ponto atual ",p')
+  println(arquivo,0," ",fret," ",0," ",0.0," Ponto atual ",p')
   flush(arquivo)
 
   # Copia o ponto atual para a variável pt
@@ -134,7 +134,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
   end #if
 
   #println("\n Obj ",fret," na iteração externa ",iter)
-  println(arquivo,count," ",fret," ",ibig," ",del," Ponto atual ",p')
+  println(arquivo,iter," ",fret," ",ibig," ",del," Ponto atual ",p')
   flush(arquivo)
 
   if toplot
