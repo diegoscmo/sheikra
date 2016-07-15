@@ -176,6 +176,9 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
   # Produto interno D*d;..tem um -1 na frente porque a direção de minimização é D=-d...
     const direita1 = -1.0
 
+  # Vou precisar deste cara fora do loop
+    const fu = f0
+
   #println("\n ******************************************************************************************************* ")
   # Loop do Método
     for i=1:100
@@ -206,6 +209,6 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
 
     end #i
     #println("\n ======================================================================================================= ")
-    return  flag,xf
+    return  flag,xf,fu
 
 end # Armijo
