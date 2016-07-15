@@ -5,7 +5,7 @@
 function Powell(numturb,nc,tol,rsf,toplot)
 
   # Tolerância para a parada (variação do objetivo)
-  const ftol = 1E-5
+  const ftol = tol
 
   # Loads chosen RSF
   p_grid,z_grid,f_grid,A_grid,k_grid,numsec,gridsize,minx,miny = Load_RSF(string("maps/",rsf,".rsf"));
