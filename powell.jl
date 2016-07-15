@@ -1,6 +1,7 @@
 #
 # Método de Powell
 # http://www.personal.psu.edu/cxg286/Math555.pdf, página 99/100
+# Artigo original: http://comjnl.oxfordjournals.org/content/7/2/155.full.pdf+html
 #
 function Powell(numturb,nc,tol,rsf,toplot)
 
@@ -88,21 +89,37 @@ function Powell(numturb,nc,tol,rsf,toplot)
     # Ao terminarmos de varrer todas as direções, temos que nos preocupar com a base
     # pois os vetores podem ficar L.I
     # Vamos usar a Heurística do Powell...
-    @simd for j=1:2*numturb
-       @inbounds P[j] = x_next[j] - x0[j]
-    end
-    f0,viol0 = Fun_Obj(x0',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
-    fN,violN = Fun_Obj(x_next',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
-    fE,violE = Fun_Obj((2*x_next-x0)',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+    # Segundo Powell, esta estratégia é melhor do que a tradicional se
+    # a função não for quadrática.
+    if ! ( (fE>=f0) || (2*(f0-2*fN+fE)*(f0-fN-Df)^2 >= Df*(f0-fE)^2) )
 
-    if !(fE<=f0) || (2*(2*fN+fE-f0)*((fN-f0)-Df)^2 >= Df*(fE-f0)^2)
-         # Arruma a base para não perder a IL. 
+         println("\n Powel::Resetando a direção $best_index")
+
+         # Arruma a base para não perder a independência linear.
+         @simd for j=1:2*numturb
+             @inbounds P[j] = x_next[j] - x0[j]
+         end
          @inbounds for j=1:2*numturb
              L[j,best_index] = P[j]
           end
-    end
+
+        # Calcula o passo na direção deste novo P, e assume como ponto inicial
+        # para a próxima iteração.
+        flag, x_now = Line_Search_Backtracing(x0, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
+        # Se o flag for -1, sentido contrário
+        if flag==-1
+           flag, x_now = Line_Search_Backtracing(x0, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+        end
+
+        # Calcula o objetivo neste ponto
+        fN,violN = Fun_Obj(x_now',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+    end #if !
 
     println("\n Obj ",fN," ",count)
+
+    println(arquivo,count," ",fN," ",best_index," ",Df," Ponto atual ",x_now')
+    flush(arquivo)
 
     # Criterio de convergência
     xdiff = norm(P)
@@ -114,7 +131,9 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
   end #While
 
+  close(arquivo)
   return  Array_Layout(x_now)
+
 
 end # Powell
 
