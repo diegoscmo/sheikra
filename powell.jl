@@ -39,8 +39,8 @@ function Powell(numturb,nc,tol,rsf,toplot)
     # Variáveis internas do while
     const Df = 0.0
     const x0 = copy(x_now)
-    const r = Array(2*numturb)
-    const P = Array(2*numturb)
+    const r = Array(Float64,2*numturb)
+    const P = Array(Float64,2*numturb)
 
     # Preciso deste cara depois do loop de direções
     const x_next = zeros(x_now)
@@ -95,7 +95,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
     fN,violN = Fun_Obj(x_next',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
     fE,violE = Fun_Obj((2*x_next-x0)',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
-    if !(fE<=f0) || (2*(2*fN+fE-f0)*((fN-f0)-Df)^2 >= Df*(fE-f0)^2)@simd 
+    if !(fE<=f0) || (2*(2*fN+fE-f0)*((fN-f0)-Df)^2 >= Df*(fE-f0)^2)
          # Arruma a base para não perder a IL. 
          @inbounds for j=1:2*numturb
              L[j,best_index] = P[j]
