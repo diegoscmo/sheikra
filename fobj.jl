@@ -75,7 +75,7 @@ end # Inicializa particula
 #
 # Atualiza a visualizacao dos resultados.
 #
-function Atualiza_Display(gbest,numturb,fgbest,t,nit,p_grid,gridsize)
+function Atualiza_Display(gbest,numturb,fgbest,t,nit,p_grid,gridsize,mostra_texto=false)
 
     const pt = Array(Float64,numturb,2)
     for i=1:numturb
@@ -86,8 +86,10 @@ function Atualiza_Display(gbest,numturb,fgbest,t,nit,p_grid,gridsize)
     clf()
     Plot_Grid(p_grid)
     Plot_WT(pt,gridsize)
-    @printf "Geração total: %.4f [MWh] - IT: " -fgbest
-    @printf "%d/%d\n" t nit
+    if mostra_texto
+       @printf "Geração total: %.4f [MWh] - IT: " -fgbest
+       @printf "%d/%d\n" t nit
+    end
 
 end
 
