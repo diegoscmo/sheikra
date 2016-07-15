@@ -54,7 +54,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
     println("\n Avaliando as direções para esta iteração")
 
     # Loop das direções
-    @inbounds for i=1:2*numturb
+     @showprogress 1 "Iteracao $count / Nmaxiter..." for i=1:2*numturb
 
         # Vetor direção atual
         @inbounds for j=1:2*numturb
@@ -63,8 +63,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
         # Guarda o valor de fN para podermos calcular a diferença
         const valor_anterior = fN
-
-
+        
         # Line search para frente (sentido = 1)
         flag, x_next,fN = Line_Search_Backtracing(x_now, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
@@ -89,7 +88,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
         # Seleciona a direção com a mehor descida
         if (valor_anterior - fN)>Df
           Df = (valor_anterior - fN)
-          println(Df," ",i)
+          #println(Df," ",i)
           best_index = i
         end
 
