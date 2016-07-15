@@ -15,9 +15,9 @@
 
     # Calcula o valor das restricoes
     # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
-    nr = 0.0
-    for i=1:numturb
-        for j=1:numturb
+    const nr = 0.0
+    @inbounds for i=1:numturb
+        @inbounds for j=1:numturb
             if i!=j
                 dis = norm(layout[i,:]-layout[j,:])
                 if dis < 2.0*(110.0)
@@ -38,13 +38,13 @@ end #FunObj
 @everywhere function Inicializa_Particula(numturb,anygrid,gridsize,regioes,centroides,reg_turb)
 
   # Inicializa array e valor maximo de posicao
-  layout = zeros(numturb,2)
+  layout = Array(Float64,numturb,2)
   xmax   = size(anygrid,1)*gridsize
   ymax   = size(anygrid,2)*gridsize
 
-  for i=1:numturb
+  @inbounds for i=1:numturb
     # Busca regiao onde deveria estar a turbina
-    r = reg_turb[i,2]
+    const r = reg_turb[i,2]
 
     # Insere a turbina aleatoriamente ate que ela esteja na sua devida regiao
     while To_Dentro_Regiao(regioes[r],centroides[r],layout[i,:]) == false
@@ -69,7 +69,7 @@ end # Inicializa particula
 #
 function Atualiza_Display(gbest,numturb,fgbest,t,nit,p_grid,gridsize)
 
-    pt = zeros(numturb,2)
+    const pt = Array(Float64,numturb,2)
     for i=1:numturb
        pt[i,1] = gbest[i*2-1]
        pt[i,2] = gbest[i*2]
@@ -89,13 +89,13 @@ end
 @everywhere function Array_Layout(array)
 
   # Determina o numero de turbinas
-  numturb = convert(Int64,size(array,2)/2)
+  const numturb = convert(Int64,size(array,2)/2)
 
   # Inicializa o vetor Layout
-  layout = Array(Float64,numturb,2)
+  const layout = Array(Float64,numturb,2)
 
   # Converte array para layout x,y
-  for i=1:numturb
+  @inbounds for i=1:numturb
     layout[i,1] = array[i*2-1]
     layout[i,2] = array[i*2]
   end
@@ -110,13 +110,13 @@ end # Array_Layout
 @everywhere function Layout_Array(layout)
 
   # Determina o numero de turbinas
-  numturb = size(layout,1)
+  const numturb = size(layout,1)
 
   # Inicializa o vetor Layout
-  array = Array(Float64,numturb*2)
+  const array = Array(Float64,numturb*2)
 
   # Converte layout x,y para array 1D
-  for i=1:numturb
+  @inbounds for i=1:numturb
     array[i*2-1] = layout[i,1]
     array[i*2]   = layout[i,2]
   end
