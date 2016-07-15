@@ -56,7 +56,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
     # Preciso deste cara depois do loop de direções
     const x_next = zeros(x_now)
 
-    println("\n Avaliando as direções para esta iteração")
+    #println("\n Avaliando as direções para esta iteração")
 
     # Loop das direções
     @showprogress 10 "Iteracao $count / $Nmaxiter..." for i=1:2*numturb
