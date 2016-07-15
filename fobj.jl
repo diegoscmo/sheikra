@@ -27,6 +27,14 @@
         end
     end
 
+  # Aplica a violação das restrições no cálculo da função objetivo
+  # onde um fator de penalização será utilizado para ajustar a dimensão
+  # dos termos. Como a máxima violação que pode ocorrer em cada turbina
+  # é de 200 e temos numturb turbinas, o caso mais crítico seria viol0
+  # igual a 200*(numturb-1)^2. No entanto, o valor do objetivo é mumericamente bem maior
+  # tal que um fator fixo de 100 pode ser usado nos testes iniciais.
+    valor = valor + PENAL*nr
+
     return valor, nr
 end #FunObj
 
