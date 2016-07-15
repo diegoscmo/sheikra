@@ -54,7 +54,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
     println("\n Avaliando as direções para esta iteração")
 
     # Loop das direções
-     @showprogress 1 "Iteracao $count / Nmaxiter..." for i=1:2*numturb
+     @showprogress 1 "Iteracao $count / $Nmaxiter..." for i=1:2*numturb
 
         # Vetor direção atual
         @inbounds for j=1:2*numturb
