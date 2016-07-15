@@ -26,7 +26,7 @@
   # Acha o ponto com a menor coordenada y
   const menor_y       = Inf
   const ponto_inicial = 0
-  for i=1:N
+  @inbounds for i=1:N
 
       # Recupera a coordenada y
       const y = points[i][2]
@@ -232,7 +232,7 @@ end
    const dentro_de_quem = 0
 
    # Loop por cada região
-   for r in 1:length(regioes)
+   @inbounds for r in 1:length(regioes)
 
        # Recupera a região
        const regiao = regioes[r]
@@ -241,7 +241,7 @@ end
        const cent = centroides[r]
 
        # Chama a rotina para uma região
-       dentro = To_Dentro_Regiao(regiao,cent,ponto)
+       const dentro = To_Dentro_Regiao(regiao,cent,ponto)
 
        # Se dentro triangulo for verdadeiro, então podemos
        # sair do loop de regioes
@@ -275,11 +275,11 @@ end
   # A estratégia é a seguinte:
   # Se estiver dentro de algum triangulo entre o ponto e
   # os vértices do CH, então está dentro da região
-  for i=1:length(regiao)-1
+  @inbounds for i=1:length(regiao)-1
 
     # ponto 1 e ponto 2
-    p1 = regiao[i]
-    p2 = regiao[i+1]
+    const p1 = regiao[i]
+    const p2 = regiao[i+1]
 
     # Testa este triangulo..se for true,
     # marca o flag e sai do primeiro loop
