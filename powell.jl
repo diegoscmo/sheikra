@@ -61,12 +61,16 @@ function Powell(numturb,nc,tol,rsf,toplot)
             P[j] = L[j,i]
         end
 
+        # Guarda o valor de fN para podermos calcular a diferença
+        const valor_anterior = fN
+
+
         # Line search para frente (sentido = 1)
-        flag, x_next = Line_Search_Backtracing(x_now, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+        flag, x_next,fN = Line_Search_Backtracing(x_now, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
         # Se o flag for -1, sentido contrário
         if flag==-1
-           flag, x_next = Line_Search_Backtracing(x_now, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+           flag, x_next,fN = Line_Search_Backtracing(x_now, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
         end
 
         # Vetor de diferença e sua norma
@@ -77,9 +81,10 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
         #println("\n residuo $Nr na dir $i")
 
-        # Melhor Indice até agora
-        if Df<Nr
-          Df = Nr
+        # Seleciona a direção com a mehor descida
+        if (valor_anterior - fN)>Df
+          Df = (valor_anterior - fN)
+          println(Df," ",i)
           best_index = i
         end
 
@@ -109,15 +114,13 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
         # Calcula o passo na direção deste novo P, e assume como ponto inicial
         # para a próxima iteração.
-        flag, x_now = Line_Search_Backtracing(x0, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+        flag, x_now,fN = Line_Search_Backtracing(x0, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
         # Se o flag for -1, sentido contrário
         if flag==-1
-           flag, x_now = Line_Search_Backtracing(x0, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+           flag, x_now,fN = Line_Search_Backtracing(x0, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
         end
 
-        # Calcula o objetivo neste ponto
-        fN,violN = Fun_Obj(x_now',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
     end #if !
 
     println("\n Obj ",fN," ",count)
