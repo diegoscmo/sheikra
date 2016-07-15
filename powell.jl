@@ -35,6 +35,12 @@ function Powell(numturb,nc,tol,rsf,toplot)
   # e vale a pena acompanhar o andamento
   arquivo = open("convergencia_powell.txt","w")
 
+  # Faz um primeiro calculo do objetivo na entrada
+  fN,violN = Fun_Obj(x_now',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
+  println(arquivo,count," ",fN," ",0," ",0.0," Ponto atual ",x_now')
+  flush(arquivo)
+
   # Loop principal
   while xdiff>tol && count < Nmaxiter
 
@@ -49,12 +55,11 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
     # Preciso deste cara depois do loop de direções
     const x_next = zeros(x_now)
-    const fN = 0.0
-    
+
     println("\n Avaliando as direções para esta iteração")
 
     # Loop das direções
-     @showprogress 1 "Iteracao $count / $Nmaxiter..." for i=1:2*numturb
+    @showprogress 10 "Iteracao $count / $Nmaxiter..." for i=1:2*numturb
 
         # Vetor direção atual
         @inbounds for j=1:2*numturb
@@ -63,7 +68,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
         # Guarda o valor de fN para podermos calcular a diferença
         const valor_anterior = fN
-        
+
         # Line search para frente (sentido = 1)
         flag, x_next,fN = Line_Search_Backtracing(x_now, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
@@ -72,7 +77,6 @@ function Powell(numturb,nc,tol,rsf,toplot)
            flag, x_next,fN = Line_Search_Backtracing(x_now, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
         end
 
-        # Teste de consistência
         if flag==-1
             println("\n Powell::direção $i não mehorou em nenhum sentido do LS")
         end
@@ -83,12 +87,10 @@ function Powell(numturb,nc,tol,rsf,toplot)
         end
         const Nr = norm(r)
 
-        #println("\n residuo $Nr na dir $i")
-
         # Seleciona a direção com a mehor descida
         if (valor_anterior - fN)>Df
           Df = (valor_anterior - fN)
-          #println(Df," ",i)
+          #println(Df," ",i," ",Nr)
           best_index = i
         end
 
@@ -102,6 +104,11 @@ function Powell(numturb,nc,tol,rsf,toplot)
     # Ao terminarmos de varrer todas as direções, temos que nos preocupar com a base
     # pois os vetores podem ficar L.I
     # Vamos usar a Heurística do Powell...
+    # Calcula a função em diferentes pontos
+    f0,viol0 = Fun_Obj(x0',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+    fN,violN = Fun_Obj(x_next',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+    fE,violE = Fun_Obj((2.0*x_next-x0)',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
     # Segundo Powell, esta estratégia é melhor do que a tradicional se
     # a função não for quadrática.
     if ! ( (fE>=f0) || (2*(f0-2*fN+fE)*(f0-fN-Df)^2 >= Df*(f0-fE)^2) )
@@ -112,8 +119,12 @@ function Powell(numturb,nc,tol,rsf,toplot)
          @simd for j=1:2*numturb
              @inbounds P[j] = x_next[j] - x0[j]
          end
+
+         # Grava a nova direção
+         # http://www.aip.de/groups/soe/local/numres/bookcpdf/c10-5.pdf, página 419
          @inbounds for j=1:2*numturb
-             L[j,best_index] = P[j]
+             L[j,best_index] = L[j,end]
+             L[j,end]        = P[j]
           end
 
         # Calcula o passo na direção deste novo P, e assume como ponto inicial
@@ -125,9 +136,10 @@ function Powell(numturb,nc,tol,rsf,toplot)
            flag, x_now,fN = Line_Search_Backtracing(x0, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
         end
 
+
     end #if !
 
-    println("\n Obj ",fN," ",count)
+    println("\n Obj ",fN," na iteração externa ",count)
 
     println(arquivo,count," ",fN," ",best_index," ",Df," Ponto atual ",x_now')
     flush(arquivo)
