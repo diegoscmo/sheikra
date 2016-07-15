@@ -63,60 +63,6 @@ end #FunObj
 end # Inicializa particula
 
 
-#
-# Rotina que atualiza a posição de um ponto (turbina), cuidando para que
-# ele sempre fique dentro da sua região
-#
-# v = w*v + C1*rand(....) + C2*rand()....
-#
-@everywhere function Atualiza_Turbina(ponto,velocidade,w,C1,C2,pbest,gbest,
-                                          turb,reg_turb,regioes,centroides)
-
-  # Estimativa de velocidade, método PSO tradicional.
-  const r1 = rand()
-  const r2 = rand()
-  const vx = w*velocidade[1] + C1*r1*( pbest[1] - ponto[1] ) + C2*r2*(gbest[1] - ponto[1])
-  const vy = w*velocidade[2] + C1*r1*( pbest[2] - ponto[2] ) + C2*r2*(gbest[2] - ponto[2])
-
-  # Vetor posição relativa
-  const passo  = sqrt(vx^2 + vy^2)
-  const angulo = atan2(vy,vx)
-
-  # Localiza a regiao que a turbina deve estar
-  const r = reg_turb[turb,2]
-
-
-  # Agora fazemos um loop com a estimativa da nova posição, e, se ela sair do convex hull,
-  # fazemos uma redução do passo, até que fique dentro
-  while true
-
-    # Nova estimativa
-    const ponto_futuro = [ponto[1] + passo*cos(angulo) ponto[2] + passo*sin(angulo)]
-
-    # Testa se está dentro
-    flag = To_Dentro_Regiao(regioes[r],centroides[r],ponto_futuro)
-
-    # Ou sai porque estamos dentro, ou corta o passo em 10%
-    if flag
-      break
-    else
-      passo = passo * 0.9
-    end
-    # Se o passo ficar muito pequeno, reduz a zero e sai
-    if passo < 1.0E-2
-      passo = 0.0
-      break
-    end
-
-  end #while
-
-  # Se chegamos aqui, então podemos devolver a nova estimativa de velocidade e do ponto
-  const v = [passo*cos(angulo) passo*sin(angulo)]
-  const p = ponto + v
-
-  return v,p
-
-end
 
 #
 # Atualiza a visualizacao dos resultados.
