@@ -12,6 +12,7 @@ end
 # Initializes libraries
 using PyPlot
 using Distributions
+using ProgressMeter
 
 include("io.jl")
 include("fobj.jl")
