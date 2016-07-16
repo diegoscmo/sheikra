@@ -12,29 +12,59 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
   # Inclui os dados das regioes para limitar espaço de busca de cada turbina
   # regioes, centroides e reg_turbinas
-  include("regioes_chico.jl")
+  @everywhere include("regioes_chico.jl")
 
   # Loads Linear Interpolation of the power curve (here for standard density)
   pcurve  = open(readdlm,"others/power_curve.txt")[:,2]
   ctcurve = open(readdlm,"others/CT1.txt")[:,2]
 
-  # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
-  # uso do Inicializa_Particulas.
-  const p = Crazy_Joe(numturb,nc,rsf,toplot)
-
   # Usamos bastante este cara aqui
   const num2 = 2*numturb
 
-  # Uma direação de busca
-  const xit = Array(Float64,num2)
+  # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
+  # uso do Inicializa_Particulas.
+  # Armazena melhor chute e melhor valor - Inicializa tudo em zero.
+  melhor_posicao = SharedArray(Float64,num2,1);
+  melhor_valor   = SharedArray(Float64,1,1)
+
+  # Inicializa partículas, gbest e pbest
+  @sync @parallel for k = 1:nc
+
+      # Gera as coordenadas para cada particula, sem pegar locais sem vento
+        xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
+
+        # Calcula a função objetivo e o valor das restrições
+        obj,restr = Fun_Obj(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
+        # Se melhorou, então guarda
+        if obj<melhor_valor[1]
+              println(" Crazy_Joe::Improving... ",obj)
+              melhor_valor[1] = obj
+              melhor_posicao[:,1] = xp
+        end
+
+
+  end #p
+
+  # Melhor chute é o nosso ponto incial no Powell
+  const p = vec(sdata(melhor_posicao)')
 
   # Libera a memória ...
   @everywhere gc()
 
+  # Já que o resto não está paralelizado, vamos desconectar os processos
+  np = nprocs()
+  if np>1
+     for i=np:-1:2
+         rmprocs(i)
+    end
+  end
 
   # Gera a base inicial de busca
   const L = eye(num2,num2)
 
+  # Uma direação de busca (coluna de L)
+  const xit = Array(Float64,num2)
 
   # Indicam a direção e o valor da maior mudança no valor da função objetivo
   const ibig = 0
@@ -55,12 +85,15 @@ function Powell(numturb,nc,tol,rsf,toplot)
   println(arquivo,0," ",fret," ",0," ",0.0," Ponto atual ",p')
   flush(arquivo)
 
-  # Copia o ponto atual para a variável pt
+   # Copia o ponto atual para a variável pt
   const pt = copy(p)
-  const ptt = copy(p)
 
+  # Vetores auxiliares
+  const ptt = copy(p)
+  const ppp = copy(p)
+  
   # Loop principal
-  for iter = 1:(num2)^2
+  for iter = 1:(10*num2)
 
     # Copia fret para fp
     const fp = fret
@@ -75,7 +108,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
     @showprogress 1 "Iteracao $iter || $fret " for i=1:num2
 
       # Extrai uma coluna da matriz de bases
-      for j=1:num2
+      @inbounds for j=1:num2
           xit[j]=L[j,i]
       end
 
@@ -103,7 +136,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
 
    # Calcula os pontos para a frente (extrapolados) e translada o ponto atual
-   for j=1:num2
+   @inbounds for j=1:num2
       ptt[j] = 2.0*p[j]-pt[j]
       xit[j] = p[j]-pt[j]
        pt[j] = p[j]
@@ -119,14 +152,19 @@ function Powell(numturb,nc,tol,rsf,toplot)
       if (t < 0.0)
 
           # Faz um line search na direção xit, partindo de p
-          ppp = copy(p)
+          # Faz um line search na direção xit, partindo de p
+          @inbounds for j=1:num2
+              ppp[j] = p[j]
+          end
           fret, p = LS(p, xit, ibig, numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
           # Copia o deslocamento de p para xit
-          xit = p - ppp
+          @simd for j=1:num2
+             @inbounds xit[j] = p[j] - ppp[j]
+          end
 
           # Move par o mínimo da nova direção e salva a nova direção
-          for j=1:num2
+          @inbounds for j=1:num2
               L[j,ibig]=L[j,num2]
               L[j,num2]=xit[j]
           end #j
@@ -187,18 +225,27 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
   # Define um valor minimo de passo
     const minimo = 1E-12
 
+  # Dimensao do vetor
+    const nx = size(x,1)
+
+  # d é um vetor
+    d = vec(d)
+
   # Calcula o valor do custo no ponto atual
     f0,viol0 =  Fun_Obj(x',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
   # Normaliza a direção de busca, só para garantir...
-    d = vec(d/norm(d))
+    const nd = norm(d)
+    @simd for j=1:nx
+        @inbounds d[j] = d[j]/nd
+    end
 
   # Verifica se não temos um alfa limite. Do contrário, utilizamos o máximo
   # FIXME -> adaptar ao tamanho do grid
     const alfa = 10.0
 
-  # Copia para a saida
-    const xf = copy(x)
+  # Define a posição futura
+    const xf = Array(Float64,nx)
 
   # Flag de convergência
     const flag = 1
@@ -211,10 +258,13 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
 
   #println("\n ******************************************************************************************************* ")
   # Loop do Método
-    for i=1:100
+  @inbounds  for i=1:100
 
         # Posição futura
-        xf =  x + sentido*alfa*d
+        @simd for j=1:nx
+           @inbounds xf[j] =  x[j] + sentido*alfa*d[j]
+        end
+
 
         # Valor na posição futura
         fu,violu = Fun_Obj(xf',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
