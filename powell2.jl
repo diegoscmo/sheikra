@@ -95,8 +95,8 @@ function Powell(numturb,nc,tol,rsf,toplot)
    end #i
 
    #  Critério de parada por variação do valor da função
-   if 2.0*(fp-fret) <= ftol*(abs(fp)+abs(fret))+1E-10
-      println(" Powell:: Tolerância atingida ",2.0*(fp-fret))
+   if abs(fp-fret) <= ftol*abs(fp)
+      println(" Powell:: Tolerância atingida ",fp-fret)
       close(arquivo)
       return Array_Layout(p')
    end
