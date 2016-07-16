@@ -15,13 +15,14 @@
 
     # Calcula o valor das restricoes
     # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
+    const R  = 200.00
     const nr = 0.0
     @inbounds for i=1:numturb
         @inbounds for j=1:numturb
             if i!=j
-                dis = norm(layout[i,:]-layout[j,:])
-                if dis < 2.0*(110.0)
-                    nr = nr + (220-dis) #(1.0/dis)
+                const dis = (layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2
+                if sqrt(dis) < R
+                    nr = nr + (R-dis)
                 end
             end
         end
@@ -65,9 +66,8 @@ end #FunObj
   end # for i
 
   # Converte a saida para array 1D
-  array = Layout_Array(layout)
+  return Layout_Array(layout)
 
-  return array
 end # Inicializa particula
 
 
@@ -78,7 +78,7 @@ end # Inicializa particula
 function Atualiza_Display(gbest,numturb,fgbest,t,nit,p_grid,gridsize,mostra_texto=false)
 
     const pt = Array(Float64,numturb,2)
-    for i=1:numturb
+    @inbounds for i=1:numturb
        pt[i,1] = gbest[i*2-1]
        pt[i,2] = gbest[i*2]
     end #
