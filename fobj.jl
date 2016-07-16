@@ -46,7 +46,7 @@ end #FunObj
 @everywhere function Inicializa_Particula(numturb,anygrid,gridsize,regioes,centroides,reg_turb)
 
   # Inicializa array e valor maximo de posicao
-  layout = Array(Float64,numturb,2)
+  layout = zeros(Float64,numturb,2)
   xmax   = size(anygrid,1)*gridsize
   ymax   = size(anygrid,2)*gridsize
 
