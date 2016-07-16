@@ -52,7 +52,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
   # Libera a memória ...
   @everywhere gc()
 
-  # Já que o resto não está paralelizado, vamos desconectar os processos
+  # Já que o resto do código não está paralelizado, vamos desconectar os processos
   np = nprocs()
   if np>1
      for i=np:-1:2
@@ -195,15 +195,16 @@ end # Rotina..que só deve sair por tolerância ou por excesso de iterações
 function  LS(x, P, direcao, numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
         # Line search para frente (sentido = 1)
-        flag, x_next,fN = Line_Search_Backtracing(x, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+        flag, x_next,fN,f0 = Line_Search_Backtracing(x, P, 1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
         # Se o flag for -1, sentido contrário
         if flag==-1
-           flag, x_next,fN = Line_Search_Backtracing(x, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+           flag, x_next,fN,f0 = Line_Search_Backtracing(x, P, -1.0,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
         end
 
         if flag==-1
-            println("\n LS::Powell::direção $direcao não mehorou em nenhum sentido.")
+            println("\n LS::Powell::direção $direcao não mehorou em nenhum sentido. Retornando o ponto atual")
+            return f0, x
         end
 
         return fN, x_next
@@ -289,6 +290,6 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
 
     end #i
     #println("\n ======================================================================================================= ")
-    return  flag,xf,fu
+    return  flag,xf,fu,f0
 
 end # Armijo
