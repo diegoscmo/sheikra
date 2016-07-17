@@ -20,8 +20,8 @@
     @inbounds for i=1:numturb
         @inbounds for j=1:numturb
             if i!=j
-                const dis = (layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2
-                if sqrt(dis) < R
+                const dis = sqrt((layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2)
+                if dis < R
                     nr = nr + (R-dis)
                 end
             end
