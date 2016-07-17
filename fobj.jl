@@ -15,7 +15,7 @@
 
     # Calcula o valor das restricoes
     # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
-    const R  = 200.00
+    const R  = 220.00
     const nr = 0.0
     @inbounds for i=1:numturb
         @inbounds for j=1:numturb
@@ -31,8 +31,8 @@
   # Aplica a violação das restrições no cálculo da função objetivo
   # onde um fator de penalização será utilizado para ajustar a dimensão
   # dos termos. Como a máxima violação que pode ocorrer em cada turbina
-  # é de 200 e temos numturb turbinas, o caso mais crítico seria viol0
-  # igual a 200*(numturb-1)^2. No entanto, o valor do objetivo é mumericamente bem maior
+  # é de 220 e temos numturb turbinas, o caso mais crítico seria viol0
+  # igual a 220*(numturb-1)^2. No entanto, o valor do objetivo é mumericamente bem maior
   # tal que um fator fixo de 100 pode ser usado nos testes iniciais.
     valor = valor + PENAL*nr
 
@@ -134,4 +134,3 @@ end # Array_Layout
   return array
 
 end # Layout_Array
-
