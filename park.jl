@@ -47,7 +47,7 @@
         # Computes the frequency of wind for each velocity
         const veloc = dist_vel[v,1]
         const f_vel = dist_vel[v,2]
-        const freq  = f_dir*f_vel*8760000.0
+        const freq  = f_dir*f_vel*8.76
 
         # Acumulates AEP without wake
         AEP[t,3] += freq*Interpola1D(pcurve,veloc)
