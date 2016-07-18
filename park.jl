@@ -10,14 +10,14 @@
   # assuming here same turbine for all layout
   const rot_rad = 55.0                   # Rotor radius
   const hub_hei = 120.0                  # Hub Height
-  const wake_dk = 0.11                   # Wake decay (wake spread angle)
-                                         # Air density alrays the same
+  const wake_dk = 0.075                  # Wake decay (wake spread angle)
+                                         # Air density always the same
 
   ### Future calculation inputs ####
-  const vini    = 0.5                    # Initial velocity #0.5
+  const vini    = 2.5                    # Initial velocity #0.5
   const vstep   = 1.0                    # Step for loop through velocities #1.0
   const vfin    = 20.5                   # Final velocity #30.5 ##MODIFICADO
-  const nangles = 31                     # Number of angles/sector (for wake) #31, can't be 1  ##MODIFICADO
+  const nangles = 11                     # Number of angles/sector (for wake) #31, can't be 1  ##MODIFICADO
 
 
   # Velocities
@@ -47,7 +47,7 @@
         # Computes the frequency of wind for each velocity
         const veloc = dist_vel[v,1]
         const f_vel = dist_vel[v,2]
-        const freq  = f_dir*f_vel*365.0*24.0/1E3
+        const freq  = f_dir*f_vel*8760000.0
 
         # Acumulates AEP without wake
         AEP[t,3] += freq*Interpola1D(pcurve,veloc)
@@ -67,12 +67,12 @@
 
     # Includes X, Y and Eff % to the final display
     AEP[t,1:2]=layout[t,:]
-    AEP[t,5]=100*AEP[t,4]/AEP[t,3]
+    AEP[t,5]=100.0*AEP[t,4]/AEP[t,3]
 
   end # for t
     AEP[numturb+1,3]=sum(AEP[:,3])
     AEP[numturb+1,4]=sum(AEP[:,4])
-    AEP[numturb+1,5]=100*AEP[numturb+1,4]/AEP[numturb+1,3]
+    AEP[numturb+1,5]=100.0*AEP[numturb+1,4]/AEP[numturb+1,3]
 
   return AEP
 end # function Calc_Park
@@ -215,7 +215,7 @@ end #function
   # And the list gets sorted by distance, and the distances column is excluded
   ord_layout = sortrows(ord_layout, lt=(x,y)->isless(x[4],y[4]))[:,1:3]
 
-  
+
   return ord_layout
 end #function Order_Layout
 
