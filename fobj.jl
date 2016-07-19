@@ -3,30 +3,48 @@
 # fique dentro da sua região
 #
 @everywhere function Fun_Obj(x,numturb,f_grid,A_grid,k_grid,
-                             z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+  z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
-    # Converte o array posicao para um layout
-    layout = Array_Layout(x)
+  # Converte o array posicao para um layout
+  layout = Array_Layout(x)
 
-    # Calcular o valor da funcao objetivo (-AEP total)
-    # (Recupera somente a ultima posição da matriz)
-    valor = -1.0 * Calc_Park(layout,f_grid,A_grid,k_grid,z_grid,
-                             p_grid,numsec,gridsize,pcurve,ctcurve)[end,4]
+  # Calcular o valor da funcao objetivo (-AEP total)
+  # (Recupera somente a ultima posição da matriz)
+  valor = -1.0 * Calc_Park(layout,f_grid,A_grid,k_grid,z_grid,
+  p_grid,numsec,gridsize,pcurve,ctcurve)[end,4]
 
-    # Calcula o valor das restricoes
-    # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
-    const R  = 220.00
-    const nr = 0.0
-    @inbounds for i=1:numturb
-        @inbounds for j=1:numturb
-            if i!=j
-                const dis = sqrt((layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2)
-                if dis < R
-                    nr = nr + (R-dis)
-                end
-            end
+  # Calcula o valor das restricoes
+  # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
+  const R  = 220.00
+  const nr1 = 0.0
+  @inbounds for i=1:numturb
+    @inbounds for j=1:numturb
+      if i!=j
+        const dis = sqrt((layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2)
+        if dis < R
+          nr1 = nr1 + (R-dis)
         end
+      end
     end
+  end
+
+  # Também devemos calcular, quando estamos utilizando o Powell,
+  # Se cada turbina está no seu devido setor. Do contrário, temos que
+  # Aplicar uma penalidade...para isto vamos precisar de novas informações,
+  # tais como reg_turb, regioes e centróides.
+  const nr2 = 0.0
+  @inbounds for i=1:numturb
+
+    # Busca regiao onde deveria estar a turbina
+    const r = reg_turb[i,2]
+
+    # Se
+    if !To_Dentro_Regiao(regioes[r],centroides[r],layout[i,:])
+      nr2 +=1
+    end
+  end
+
+
 
   # Aplica a violação das restrições no cálculo da função objetivo
   # onde um fator de penalização será utilizado para ajustar a dimensão
@@ -34,11 +52,27 @@
   # é de 220 e temos numturb turbinas, o caso mais crítico seria viol0
   # igual a 220*(numturb-1)^2. No entanto, o valor do objetivo é mumericamente bem maior
   # tal que um fator fixo de 100 pode ser usado nos testes iniciais.
-    valor = valor + PENAL*nr
+  nr = nr1 + nr2
 
-    return valor, nr
+  return valor, nr
 end #FunObj
 
+#
+#
+# Verifica se o resultado está penalizado
+#
+function Verifica_Penalizacao(x,numturb,f_grid,A_grid,k_grid,
+  z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
+  valor,nr = Fun_Obj(x,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
+  if nr > 0.0
+    @printf("\nCUIDADO! Valor da função objetivo penalizado em %.3f.\n",nr)
+  else
+    @printf("\nValor obtido sem penalização.\n")
+  end
+
+end
 
 #
 # Gera a posicao de uma particula de modo que cada turbina
@@ -77,19 +111,19 @@ end # Inicializa particula
 #
 function Atualiza_Display(gbest,numturb,fgbest,t,nit,p_grid,gridsize,mostra_texto=false)
 
-    const pt = Array(Float64,numturb,2)
-    @inbounds for i=1:numturb
-       pt[i,1] = gbest[i*2-1]
-       pt[i,2] = gbest[i*2]
-    end #
+  const pt = Array(Float64,numturb,2)
+  @inbounds for i=1:numturb
+    pt[i,1] = gbest[i*2-1]
+    pt[i,2] = gbest[i*2]
+  end #
 
-    clf()
-    Plot_Grid(p_grid)
-    Plot_WT(pt,gridsize)
-    if mostra_texto
-       @printf "Geração total: %.4f [MWh] - IT: " -fgbest
-       @printf "%d/%d\n" t nit
-    end
+  clf()
+  Plot_Grid(p_grid)
+  Plot_WT(pt,gridsize)
+  if mostra_texto
+    @printf "Geração total: %.4f [MWh] - IT: " -fgbest
+    @printf "%d/%d\n" t nit
+  end
 
 end
 
