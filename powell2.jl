@@ -79,7 +79,7 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
   # Vamos abrir um arquivo para escrita, pois o método é lento
   # e vale a pena acompanhar o andamento
-  arquivo = open("convergencia_powell.txt","w")
+  arquivo = open("convergencia_powell2.txt","w")
 
   # Faz um primeiro calculo do objetivo na entrada
   fret = Fun_Obj_Powell(p',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
@@ -189,8 +189,14 @@ function Powell(numturb,nc,tol,rsf,toplot)
 
 end #iter
 
-# Fecha o arquivo e retorna a solução
+# Fecha o arquivo
 close(arquivo)
+
+# Dá o display sobre a penalização do resultado
+Verifica_Penalizacao(p',numturb,f_grid,A_grid,k_grid,
+                             z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
+
+# e retorna a solução
 return Array_Layout(p')
 
 end # Rotina..que só deve sair por tolerância ou por excesso de iterações
@@ -325,13 +331,13 @@ end # Armijo
     # Calcula o valor das restricoes
     # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
     const R  = 220.00
-    const nr = 0.0
+    const nr1 = 0.0
     @inbounds for i=1:numturb
         @inbounds for j=1:numturb
             if i!=j
                 const dis = sqrt((layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2)
                 if dis < R
-                    nr = nr + (R-dis)
+                    nr1 = nr1 + (R-dis)
                 end
             end
         end
@@ -361,7 +367,7 @@ end # Armijo
   # é de 200 e temos numturb turbinas, o caso mais crítico seria viol0
   # igual a 200*(numturb-1)^2. No entanto, o valor do objetivo é mumericamente bem maior
   # tal que um fator fixo de 100 pode ser usado nos testes iniciais.
-    valor = valor + PENAL*nr + PENAL2*nr2
+    valor = valor + PENAL*nr1 + PENAL2*nr2
 
     return valor
 end #FunObjPowell
