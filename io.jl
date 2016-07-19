@@ -96,11 +96,13 @@ end
 
  end #Plot_WT
 
-#Writes to file and outputs
-function Disp_Res(layf,rsf,AEP)
+#
+# Escreve a saída do AEP para um arquivo e dá o display no console
+#
+function Disp_Res(runname,rsf,AEP)
 
-  # open file to write
-  f = open(string(layf,"_",rsf,"_res.txt"),"w")
+  # Abre o arquivo para escrita
+  f = open(string(runname,"_res.txt"),"w")
 
   println("\n Computation done:")
   println("\n      X[m]        Y[m]       AEP[MWh]     c/wake       Eff[%]")
