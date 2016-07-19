@@ -2,7 +2,7 @@
 # Baseado em
 # [1] Hansen, N. (2011). The CMA Evloution Strategy: A Tutorial
 #
-function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot)
+function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
 
   # numturb   número de turbinas
   # nc        número de chutes do Crazy_Joe
@@ -26,47 +26,57 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot)
   # Número de variáveis / dimensão do problema
   const ndim = 2*numturb
 
-  ######## Crazy_Joe #########
 
-  # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
-  # uso do Inicializa_Particulas.
-  # Armazena melhor chute e melhor valor - Inicializa tudo em zero.
-  melhor_posicao = SharedArray(Float64,ndim,1);
-  melhor_valor   = SharedArray(Float64,1,1)
+  if length(xmedia)==0
+
+    ######## Crazy_Joe #########
+    # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
+    # uso do Inicializa_Particulas.
+    # Armazena melhor chute e melhor valor - Inicializa tudo em zero.
+    melhor_posicao = SharedArray(Float64,ndim,1);
+    melhor_valor   = SharedArray(Float64,1,1)
 
 
-  # Inicializa partículas, gbest e pbest
-  @sync @parallel for k = 1:nc
+    # Inicializa partículas, gbest e pbest
+    @sync @parallel for k = 1:nc
 
-      # Gera as coordenadas para cada particula, sem pegar locais sem vento
-        xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
+        # Gera as coordenadas para cada particula, sem pegar locais sem vento
+          xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
 
-        # Calcula a função objetivo e o valor das restrições
-        obj = Fun_Obj_Powell(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+          # Calcula a função objetivo e o valor das restrições
+          obj = Fun_Obj_Powell(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
-        # Se melhorou, então guarda
-        if obj<melhor_valor[1]
-              println(" Crazy_Joe::Improving... ",obj)
-              melhor_valor[1] = obj
-              melhor_posicao[:,1] = xp
-        end
+          # Se melhorou, então guarda
+          if obj<melhor_valor[1]
+                println(" Crazy_Joe::Improving... ",obj)
+                melhor_valor[1] = obj
+                melhor_posicao[:,1] = xp
+          end
 
-  end #p
-  ######## Crazy_Joe #########
+    end #p
+    ######## Crazy_Joe #########
 
-  # Melhor chute é o nosso ponto incial no Powell
-  xmedia = vec(sdata(melhor_posicao)')
+    # Melhor chute é o nosso ponto incial no CMAES
+    xmedia = vec(sdata(melhor_posicao)')
 
-  # Libera a memória ...
-  @everywhere gc()
+    # Libera a memória ...
+    @everywhere gc()
 
-  # Já que o resto não está paralelizado, vamos desconectar os processos
-  #np = nprocs()
-  #if np>1
-#     for i=np:-1:2
-#         rmprocs(i)
-#    end
-#  end
+    # Já que o resto não está paralelizado, vamos desconectar os processos
+    #np = nprocs()
+    #if np>1
+    #     for i=np:-1:2
+    #          rmprocs(i)
+    #    end
+    #  end
+  else
+
+    # Recebemos um ponto inicial...
+    # Vamos verificar a consistência
+    if !size(xmedia,1)==mum2
+        error("\n CMAES::Ponto inicial não tem a dimensão correta. ",size(xmedia))
+     end
+  end
 
   # Desvio padrao das coordenadas (step-size inicial) FIXME, estudar valor
   sigma = 10.0
