@@ -2,7 +2,7 @@
 # Baseado em
 # http://www.aip.de/groups/soe/local/numres/bookcpdf/c10-5.pdf, página 419
 #
-function Powell(numturb,nc,tol,rsf,toplot)
+function Powell(numturb,nc,tol,rsf,toplot,p=[])
 
   # Tolerância para a parada (variação do objetivo)
   const ftol = tol
@@ -21,51 +21,58 @@ function Powell(numturb,nc,tol,rsf,toplot)
   # Usamos bastante este cara aqui
   const num2 = 2*numturb
 
-  # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
-  # uso do Inicializa_Particulas.
-  # Armazena melhor chute e melhor valor - Inicializa tudo em zero.
-  melhor_posicao = SharedArray(Float64,num2,1);
-  melhor_valor   = SharedArray(Float64,1,1)
+  # Se recebeu um ponto inicial, então não precisamos buscar um ponto
+  # aleatório
+  if length(p)==0
 
 
-  # Inicializa partículas, gbest e pbest
-  @sync @parallel for k = 1:nc
-
-      # Gera as coordenadas para cada particula, sem pegar locais sem vento
-        xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
-
-        # Calcula a função objetivo e o valor das restrições
-        obj = Fun_Obj_Powell(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
-
-        # Se melhorou, então guarda
-        if obj<melhor_valor[1]
-              println(" Crazy_Joe::Improving... ",obj)
-              melhor_valor[1] = obj
-              melhor_posicao[:,1] = xp
-        end
+    # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
+    # uso do Inicializa_Particulas.
+    # Armazena melhor chute e melhor valor - Inicializa tudo em zero.
+    melhor_posicao = SharedArray(Float64,num2,1);
+    melhor_valor   = SharedArray(Float64,1,1)
 
 
-  end #p
+    # Inicializa partículas, gbest e pbest
+    @sync @parallel for k = 1:nc
 
-  # Melhor chute é o nosso ponto incial no Powell
-  const p = vec(sdata(melhor_posicao)')
+        # Gera as coordenadas para cada particula, sem pegar locais sem vento
+          xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
 
-  # Libera a memória ...
-  @everywhere gc()
+          # Calcula a função objetivo e o valor das restrições
+          obj = Fun_Obj_Powell(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
-  ##xx = [200.00000000007972 2550.0000000000255 526.6766484798459 3059.6763019248915 50.00000057616395 3699.9999999997094 761.5389984248789 2649.999999999994 1077.3618460637877 3366.0568602439625 1410.104915831787 4154.997512059078 950.0000001710067 4199.999999997671 1099.927726488055 3698.22533426699 1849.9999999999998 3949.9999999999986 2728.3563440284865 3045.8071598508036 2399.9999999999986 3500.0 2878.4745793288275 2590.9278719825234]
-  ## Deu problema
-  ## xx = [200.00000000003425 2550.0000000000414 528.3953984798459 3061.6294269248915 50.00000057617873 3699.9999999998913 771.9296234248789 2649.9999999999986 1077.4497366888058 3366.2424071189625 1422.604915832078 4179.997512059078 950.0000000220042 4199.999999999999 1099.9667889930026 3698.8503342670356 1849.9999999999998 3950.0 2726.0125940284865 3048.307159850881 2400.0 3500.0 2888.787079328973 2594.0919344825234]
-  #p = xx'
+          # Se melhorou, então guarda
+          if obj<melhor_valor[1]
+                println(" Crazy_Joe::Improving... ",obj)
+                melhor_valor[1] = obj
+                melhor_posicao[:,1] = xp
+          end
 
-  # Já que o resto não está paralelizado, vamos desconectar os processos
-  np = nprocs()
-  if np>1
-     for i=np:-1:2
-         rmprocs(i)
+
+    end #p
+
+    # Melhor chute é o nosso ponto incial no Powell
+    p = vec(sdata(melhor_posicao)')
+
+    # Libera a memória ...
+    @everywhere gc()
+
+    # Já que o resto não está paralelizado, vamos desconectar os processos
+    np = nprocs()
+    if np>1
+       for i=np:-1:2
+           rmprocs(i)
+      end
     end
-  end
 
+  else
+      # Recebemos um ponto inicial...
+      # Vamos verificar a consistência
+      if !size(p,1)==mum2
+         error("\n Powell2::Ponto inicial não tem a dimensão correta. ",size(p))
+     end
+  end
 
   # Gera a base inicial de busca
   const L = eye(num2,num2)
