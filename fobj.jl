@@ -14,19 +14,27 @@
   p_grid,numsec,gridsize,pcurve,ctcurve)[end,4]
 
   # Calcula o valor das restricoes
-  # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
-  const R  = 220.00
+
+  # Verifica uma area livre ao redor da turbina definida por uma elipse
+  # com 4D de largura (2D entre turbinas) e 16D de altura (8D entre turbinas)
   const nr1 = 0.0
-  @inbounds for i=1:numturb
-    @inbounds for j=1:numturb
-      if i!=j
-        const dis = sqrt((layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2)
-        if dis < R
-          nr1 = nr1 + (R-dis)
-        end
-      end
-    end
-  end
+  const altura  = 110.0*15.70
+  const largura = 110.0*4.0
+  for i=1:numturb
+      for j=1:numturb
+          if i!=j
+              xi = layout[i,1]
+              yi = layout[i,2]
+              xj = layout[j,1]
+              yj = layout[j,2]
+
+              norma = Elipse(xj,yj,xi,yi,altura,largura,angulo)
+              if norma < 1.0
+                  nr1 = nr1 + (1.0 - norma)
+              end  #if norma
+          end #if i!
+      end # for j
+  end # for i
 
   # Também devemos calcular, quando estamos utilizando o Powell,
   # Se cada turbina está no seu devido setor. Do contrário, temos que
@@ -40,11 +48,9 @@
 
     # Se
     if !To_Dentro_Regiao(regioes[r],centroides[r],layout[i,:])
-      nr2 +=1
+      nr2 += 1.0
     end
   end
-
-
 
   # Aplica a violação das restrições no cálculo da função objetivo
   # onde um fator de penalização será utilizado para ajustar a dimensão
@@ -56,6 +62,49 @@
 
   return valor, nr
 end #FunObj
+
+#
+# Testa se um ponto está dentro da elipse e retorna a distância normalizada
+#
+@everywhere function Elipse(xp,yp,xc,yc,altura,largura,angulo)
+
+  c = cos(deg2rad(180.0+angulo))
+  s = sin(deg2rad(180.0+angulo))
+
+  xce = xp - xc
+  yce = yp - yc
+
+  xct = xce * c - yce * s
+  yct = xce * s + yce * c
+
+  dist_n = (xct^2/(largura/2.)^2) + (yct^2/(altura/2.)^2)
+
+  return dist_n
+end
+
+#
+# Devolve angulo em graus do setor predominante do vento
+# a partir do grid de frequências do RSF
+#
+@everywhere function Ang_Pred(f_grid,numsec)
+
+  pred = 0
+  f_soma = 0.0
+
+  # Compara a soma de frequencias de cada setor
+  for i=1:numsec
+    nov_soma = sum(f_grid[:,:,i])
+    if  nov_soma > f_soma
+      f_soma = nov_soma
+      pred = i
+  end
+end
+
+  # Devolve o setor como angulo e retorna
+  ang = rad2deg(((pred-1)*360.0/numsec))
+  return ang
+end
+
 
 #
 #
@@ -133,7 +182,7 @@ end
 @everywhere function Array_Layout(array)
 
   # Determina o numero de turbinas
-  const numturb = convert(Int64,size(array,2)/2)
+  const numturb = convert(Int64,size(array,1)/2)
 
   # Inicializa o vetor Layout
   const layout = Array(Float64,numturb,2)

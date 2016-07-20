@@ -12,7 +12,7 @@ function Powell(numturb,nc,tol,rsf,toplot,p=[])
 
   # Inclui os dados das regioes para limitar espaço de busca de cada turbina
   # regioes, centroides e reg_turbinas
-  @everywhere include("regioes_chico.jl")
+  @everywhere include("regioes_chico_esc.jl")
 
   # Loads Linear Interpolation of the power curve (here for standard density)
   pcurve  = open(readdlm,"others/power_curve.txt")[:,2]
@@ -40,7 +40,7 @@ function Powell(numturb,nc,tol,rsf,toplot,p=[])
           xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
 
           # Calcula a função objetivo e o valor das restrições
-          obj = Fun_Obj_Powell(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+          obj = Fun_Obj_Powell(xp,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
           # Se melhorou, então guarda
           if obj<melhor_valor[1]
@@ -69,7 +69,7 @@ function Powell(numturb,nc,tol,rsf,toplot,p=[])
   else
       # Recebemos um ponto inicial...
       # Vamos verificar a consistência
-      if !size(p,1)==mum2
+      if size(p,1)!=num2
          error("\n Powell2::Ponto inicial não tem a dimensão correta. ",size(p))
      end
   end
@@ -86,13 +86,13 @@ function Powell(numturb,nc,tol,rsf,toplot,p=[])
 
   # Vamos abrir um arquivo para escrita, pois o método é lento
   # e vale a pena acompanhar o andamento
-  arquivo = open("convergencia_powell2.txt","w")
+  arquivo = open("convergencia_powell.txt","w")
 
   # Faz um primeiro calculo do objetivo na entrada
-  fret = Fun_Obj_Powell(p',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+  fret = Fun_Obj_Powell(p,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
   if toplot
-     Atualiza_Display(p',numturb,fret,0,num2^2,p_grid,gridsize)
+     Atualiza_Display(p,numturb,fret,0,num2^2,p_grid,gridsize)
   end
 
   println(" Partindo da função objetivo ",fret)
@@ -158,7 +158,7 @@ function Powell(numturb,nc,tol,rsf,toplot,p=[])
    end #j
 
    # Calcula o valor da função objetivo no ponto ptt
-   fptt = Fun_Obj_Powell(ptt',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+   fptt = Fun_Obj_Powell(ptt,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
 
    # Critério do Powell
@@ -189,8 +189,12 @@ function Powell(numturb,nc,tol,rsf,toplot,p=[])
   println(arquivo,iter," ",fret," ",ibig," ",del," Ponto atual ",p')
   flush(arquivo)
 
+  # Como o metodo pode demorar, grava layout no disco
+  layout = Array_Layout(p)
+  writedlm(string("powellrun_lay.txt"),[layout[:,1]+minx layout[:,2]+miny])
+
   if toplot
-     Atualiza_Display(p',numturb,fret,iter,num2^2,p_grid,gridsize)
+     Atualiza_Display(p,numturb,fret,iter,num2^2,p_grid,gridsize)
   end
 
 
@@ -200,11 +204,11 @@ end #iter
 close(arquivo)
 
 # Dá o display sobre a penalização do resultado
-Verifica_Penalizacao(p',numturb,f_grid,A_grid,k_grid,
+Verifica_Penalizacao(p,numturb,f_grid,A_grid,k_grid,
                              z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
 # e retorna a solução
-return Array_Layout(p')
+return Array_Layout(p)
 
 end # Rotina..que só deve sair por tolerância ou por excesso de iterações
 
@@ -259,7 +263,7 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
     d = vec(d)
 
   # Calcula o valor do custo no ponto atual
-    f0 =  Fun_Obj_Powell(x',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+    f0 =  Fun_Obj_Powell(x,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
   # Normaliza a direção de busca, só para garantir...
     const nd = norm(d)
@@ -293,7 +297,7 @@ function Line_Search_Backtracing(x, d, sentido,numturb,f_grid,A_grid,k_grid,z_gr
         end
 
         # Valor na posição futura
-        fu = Fun_Obj_Powell(xf',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+        fu = Fun_Obj_Powell(xf,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
 
         #println(f0," ",fu," ",f0-fu," ", cc*alfa*direita1," ", cc*direita2," ",alfa)
@@ -336,19 +340,29 @@ end # Armijo
                              p_grid,numsec,gridsize,pcurve,ctcurve)[end,4]
 
     # Calcula o valor das restricoes
-    # Aqui é verificado o espacamento minimo de 2*D entre as turbinas
-    const R  = 220.00
+
+    # Verifica uma area livre ao redor da turbina definida por uma elipse
+    # com 4D de largura e 16D de altura
     const nr1 = 0.0
-    @inbounds for i=1:numturb
-        @inbounds for j=1:numturb
+    const altura  = 110.0*15.70
+    const largura = 110.0*4.0
+    for i=1:numturb
+        for j=1:numturb
             if i!=j
-                const dis = sqrt((layout[i,1]-layout[j,1])^2 + (layout[i,2]-layout[j,2])^2)
-                if dis < R
-                    nr1 = nr1 + (R-dis)
-                end
-            end
-        end
-    end
+                xi = layout[i,1]
+                yi = layout[i,2]
+                xj = layout[j,1]
+                yj = layout[j,2]
+
+                norma = Elipse(xj,yj,xi,yi,altura,largura,angulo)
+
+                if norma < 1.0
+                    nr1 = nr1 + (1.0 - norma)
+                end #if norma
+            end # if i!
+        end #for j
+    end # for i
+
 
     # Também devemos calcular, quando estamos utilizando o Powell,
     # Se cada turbina está no seu devido setor. Do contrário, temos que
