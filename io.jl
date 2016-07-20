@@ -16,14 +16,19 @@
    fhand[:,2]=fhand[:,2]-ymin
 
    # Generates the gridsize
-   gridsize=abs(fhand[2,1]-fhand[1,1])
+   gridsize = abs(fhand[2,1]-fhand[1,1])
+
+   # Se der zero, utiliza a outra coordenadas
+   if gridsize == 0
+     gridsize = abs(fhand[2,2]-fhand[1,2])
+   end
 
    # Loads number of sectors
    numsec=convert(Int64,fhand[1,8])
 
    # Defines size of x and y uniques and a x y grid list
-   stx = size(unique(fhand[:,1]),1)
-   sty = size(unique(fhand[:,2]),1)
+   stx = size(unique(fhand[:,1]),1)+1
+   sty = size(unique(fhand[:,2]),1)+1
    xylist=[fhand[:,1] fhand[:,2]]/gridsize
 
    # Grids for power, height, weibulls and frequency
@@ -83,8 +88,8 @@ function Plot_Grid(any_grid)
   colorbar()
   title("")
   ax = gca()
-  ax[:set_ylim]([0.0,size(any_grid,1)])
-  ax[:set_xlim]([0.0,size(any_grid,2)])
+  ax[:set_ylim]([0.0,size(any_grid,1)-1])
+  ax[:set_xlim]([0.0,size(any_grid,2)-1])
 
 end
 
