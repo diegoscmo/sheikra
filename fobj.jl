@@ -130,16 +130,21 @@ end
 @everywhere function Inicializa_Particula(numturb,anygrid,gridsize,regioes,centroides,reg_turb)
 
   # Inicializa array e valor maximo de posicao
-  layout = zeros(Float64,numturb,2)
+  layout = rand(Float64,numturb,2)
   xmax   = size(anygrid,1)*gridsize
   ymax   = size(anygrid,2)*gridsize
+
+  # Gera a primeira posição, workaround para se [0.0,0.0] estiver na região
+  layout[:,1] *= xmax
+  layout[:,2] *= ymax
 
   @inbounds for i=1:numturb
     # Busca regiao onde deveria estar a turbina
     const r = reg_turb[i,2]
 
     # Insere a turbina aleatoriamente ate que ela esteja na sua devida regiao
-    while To_Dentro_Regiao(regioes[r],centroides[r],layout[i,:]) == false
+    while ((To_Dentro_Regiao(regioes[r],centroides[r],layout[i,:]) == false) ||
+                                  (Get_Grid(layout[i,:],anygrid,gridsize) < 0.1))
 
       layout[i,1] = xmax*rand()
       layout[i,2] = ymax*rand()
