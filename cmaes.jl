@@ -17,7 +17,7 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
 
   # Inclui os dados das regioes para limitar espaço de busca de cada turbina
   # regioes, centroides e reg_turbinas
-  @everywhere include("regioes_chico.jl")
+  @everywhere include("regioes_chico_esc.jl")
 
   # Loads Linear Interpolation of the power curve (here for standard density)
   pcurve  = open(readdlm,"others/power_curve.txt")[:,2]
@@ -44,7 +44,7 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
           xp = Inicializa_Particula(numturb,A_grid,gridsize,regioes,centroides,reg_turb)
 
           # Calcula a função objetivo e o valor das restrições
-          obj = Fun_Obj_Powell(xp',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+          obj = Fun_Obj_Powell(xp,numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
           # Se melhorou, então guarda
           if obj<melhor_valor[1]
@@ -57,18 +57,11 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
     ######## Crazy_Joe #########
 
     # Melhor chute é o nosso ponto incial no CMAES
-    xmedia = vec(sdata(melhor_posicao)')
+    xmedia = vec(sdata(melhor_posicao'))
 
     # Libera a memória ...
     @everywhere gc()
 
-    # Já que o resto não está paralelizado, vamos desconectar os processos
-    #np = nprocs()
-    #if np>1
-    #     for i=np:-1:2
-    #          rmprocs(i)
-    #    end
-    #  end
   else
 
     # Recebemos um ponto inicial...
@@ -79,7 +72,7 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
   end
 
   # Desvio padrao das coordenadas (step-size inicial) FIXME, estudar valor
-  sigma = 10.0
+  sigma = 50.0
 
   # Parámetros de seleção:
     # Tamanho da populacao >=2 [1-eq44]
@@ -151,7 +144,9 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
     iter += 1
 
     # Gera a avalia descendentes de lambda
+    #@sync @parallel
     for k = 1:lambda
+      #FIXME quando o código é paralelizado a minimização não acontece
 
       # Distribuição normal
       arz[k,:] = randn(ndim,1)
@@ -160,7 +155,7 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
       arx[k,:] = xmedia + sigma * (B*D*arz[k,:]')
 
       # Chamada da função objetivo
-      arfitness[k] = Fun_Obj_Powell(arx[k,:],numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
+      arfitness[k] = Fun_Obj_Powell(arx[k,:]',numturb,f_grid,A_grid,k_grid,z_grid,p_grid,numsec,gridsize,pcurve,ctcurve,regioes,centroides,reg_turb)
 
     end # for k
 
@@ -213,19 +208,25 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
          Atualiza_Display(arx[1,:],numturb,melhor_valor[1],iter,maxiter,p_grid,gridsize)
       end
 
+      # Como o metodo pode demorar, grava layout no disco
+      layout = Array_Layout(melhor_posicao')
+      writedlm(string("cmaes_lay.txt"),[layout[:,1]+minx layout[:,2]+miny])
+
       # Caso não achar, incrementa o contador de estagnação e sai se atingir stopestag
     else
 
       contaestag += 1
       if contaestag >= stopestag
-        println("\nFim: Atingiu o número de iterações estagnado.")
+        println("\nFim: Atingiu o número de iterações estagnado sem melhorias.")
         break
       end #contaestag
 
     end # if arfitness
 
-    # Display a cada iteração
-    @printf("iter: %d \t fitness: %.2f \t\n",iter, melhor_valor[1])
+    # Display a cada 10 iterações
+    if iter%10 == 0
+      @printf("iter: %d \t fitness: %.2f \t\n",iter, melhor_valor[1])
+    end
 
     # Finaliza se passar o número máximo de iterações
     if iter > maxiter
@@ -236,12 +237,14 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
   end #while
 
   # Adquire o melhor layout
-  layout = Array_Layout(melhor_posicao)
+  layout = Array_Layout(melhor_posicao')
 
   # Imprime se há restrições
-  Verifica_Penalizacao(melhor_posicao,numturb,f_grid,A_grid,k_grid,
+  Verifica_Penalizacao(melhor_posicao',numturb,f_grid,A_grid,k_grid,
                                z_grid,p_grid,numsec,gridsize,pcurve,ctcurve)
 
+  # Imprime resultado
+  @printf("Fim. \t fitness: %.2f \t\n", melhor_valor[1])
   # e retorna com o layout encontrado
   return layout
 
