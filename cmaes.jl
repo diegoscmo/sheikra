@@ -26,17 +26,16 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
   # Número de variáveis / dimensão do problema
   const ndim = 2*numturb
 
+  # Define fora do If para ficar visível
+  melhor_posicao = zeros(ndim,1) 
+  melhor_valor   = zeros(1,1)    SharedArray(Float64,1,1)
 
   if length(xmedia)==0
 
-    ######## Crazy_Joe #########
-    # Faz um início aleatório com nc tentativas. SE nc==1, então equivale ao
-    # uso do Inicializa_Particulas.
-    # Armazena melhor chute e melhor valor - Inicializa tudo em zero.
-    melhor_posicao = SharedArray(Float64,ndim,1);
-    melhor_valor   = SharedArray(Float64,1,1)
-
-
+    # Converte para shared array dentro do if...
+    melhor_posicao = convert(SharedArray,melhor_posicao)
+    melhor_valor   = convert(SharedArray,melhor_valor)
+    
     # Inicializa partículas, gbest e pbest
     @sync @parallel for k = 1:nc
 
@@ -50,14 +49,15 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
           if obj<melhor_valor[1]
                 println(" Crazy_Joe::Improving... ",obj)
                 melhor_valor[1] = obj
-                melhor_posicao[:,1] = xp
+                for j=1:ndim
+                    melhor_posicao[j,1] = xp[j]
+                end
           end
 
     end #p
-    ######## Crazy_Joe #########
 
     # Melhor chute é o nosso ponto incial no CMAES
-    xmedia = vec(sdata(melhor_posicao'))
+    xmedia = vec(sdata(melhor_posicao)')
 
     # Libera a memória ...
     @everywhere gc()
