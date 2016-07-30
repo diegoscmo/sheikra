@@ -28,7 +28,7 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
 
   # Define fora do If para ficar visível
   melhor_posicao = zeros(ndim,1) 
-  melhor_valor   = zeros(1,1)    SharedArray(Float64,1,1)
+  melhor_valor   = zeros(1,1)    
 
   if length(xmedia)==0
 
@@ -66,7 +66,7 @@ function CMAES(numturb,nc,maxiter,stopestag,rsf,toplot,xmedia=[])
 
     # Recebemos um ponto inicial...
     # Vamos verificar a consistência
-    if !size(xmedia,1)==mum2
+    if !size(xmedia,1)==ndim
         error("\n CMAES::Ponto inicial não tem a dimensão correta. ",size(xmedia))
      end
   end
